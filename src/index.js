@@ -160,8 +160,8 @@ async function create(appName, options) {
 			: firstArg
 	const projectDir = useCurrentDir
 		? process.cwd()
-		: options.dirPath
-			? options.dirPath
+		: options.defaultPath
+			? path.resolve(`${options.defaultPath}/${name}`)
 			: path.resolve(name)
 
 	console.log(`\nNew project will be created in ${chalk.green(projectDir)}.\n`)
