@@ -1,5 +1,5 @@
 {
-  "name": "create-initializer",
+  "name": "@archer-edu/create-initializer",
   "description": "Create your own `create-something` app.",
   "version": "1.2.0",
   "author": "ClassicOldSong <yukino@yuki.network>",
@@ -29,13 +29,13 @@
     "eslint": "^7.32.0",
     "jest": "^27.2.4"
   },
-  "homepage": "https://github.com/ClassicOldSong/create-initializer",
+  "homepage": "https://github.com/mr0atarcher/create-initializer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ClassicOldSong/create-initializer.git"
+    "url": "https://github.com/mr0atarcher/create-initializer"
   },
   "bugs": {
-    "url": "https://github.com/ClassicOldSong/create-initializer/issues"
+    "url": "https://github.com/mr0atarcher/create-initializer"
   },
   "license": "MIT",
   "keywords": [
