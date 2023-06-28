@@ -67,7 +67,7 @@ async function IsYarnAvailable() {
 async function exists(filePath, baseDir = '/') {
 	try {
 		await fs.stat(path.resolve(baseDir, filePath))
-	} catch(err) {
+	} catch (err) {
 		if (err.code === 'ENOENT') return false
 		else throw err
 	}
@@ -101,6 +101,7 @@ async function getYargsOptions(
 	templatePrefix,
 	promptForTemplate,
 	defaultTemplate,
+	skipLicense = false,
 	extraOptions = {}
 ) {
 	const gitUser = await getGitUser()
@@ -113,19 +114,19 @@ async function getYargsOptions(
 			type: 'input',
 			describe: 'description',
 			default: 'description',
-			prompt: 'if-no-arg',
+			prompt: skipLicense ? 'never' : 'if-no-arg',
 		},
 		author: {
 			type: 'input',
 			describe: 'author name',
 			default: gitUser.name,
-			prompt: 'if-no-arg',
+			prompt: skipLicense ? 'never' : 'if-no-arg',
 		},
 		email: {
 			type: 'input',
 			describe: 'author email',
 			default: gitUser.email,
-			prompt: 'if-no-arg',
+			prompt: skipLicense ? 'never' : 'if-no-arg',
 		},
 		template: {
 			type: 'list',
@@ -138,7 +139,7 @@ async function getYargsOptions(
 			type: 'list',
 			describe: 'license',
 			choices: [...availableLicenses(), 'UNLICENSED'],
-			prompt: 'if-no-arg',
+			prompt: skipLicense ? 'never' : 'if-no-arg',
 		},
 		...extraOptions,
 	}
@@ -155,9 +156,13 @@ async function create(appName, options) {
 	const name = useCurrentDir
 		? path.basename(process.cwd())
 		: options.modifyName
-		? await Promise.resolve(options.modifyName(firstArg))
-		: firstArg
-	const projectDir = useCurrentDir ? process.cwd() : path.resolve(name)
+			? await Promise.resolve(options.modifyName(firstArg))
+			: firstArg
+	const projectDir = useCurrentDir
+		? process.cwd()
+		: options.dirPath
+			? options.dirPath
+			: path.resolve(name)
 
 	console.log(`\nNew project will be created in ${chalk.green(projectDir)}.\n`)
 
@@ -171,6 +176,7 @@ async function create(appName, options) {
 		templatePrefix,
 		promptForTemplate,
 		defaultTemplate,
+		true,
 		options.extra
 	)
 	const args = await yargsInteractive()
@@ -211,18 +217,20 @@ async function create(appName, options) {
 		view,
 	})
 
-	// create LICENSE
-	try {
-		const license = makeLicenseSync(args.license, {
-			year,
-			project: name,
-			description: args.description,
-			organization: getContact(args.author, args.email),
-		})
-		const licenseText = `${license.header && license.header || ''}${license.text}${license.warranty && license.warranty || ''}`
-		await fs.writeFile(path.resolve(projectDir, 'LICENSE'), licenseText)
-	} catch (e) {
-		// do not generate LICENSE
+	if (!options.skipLicense) {
+		// create LICENSE
+		try {
+			const license = makeLicenseSync(args.license, {
+				year,
+				project: name,
+				description: args.description,
+				organization: getContact(args.author, args.email),
+			})
+			const licenseText = `${license.header && license.header || ''}${license.text}${license.warranty && license.warranty || ''}`
+			await fs.writeFile(path.resolve(projectDir, 'LICENSE'), licenseText)
+		} catch (e) {
+			// do not generate LICENSE
+		}
 	}
 
 	// install dependencies using yarn / npm
@@ -232,13 +240,15 @@ async function create(appName, options) {
 		await installDeps(projectDir, useYarn)
 	}
 
-	// init git
-	try {
-		await initGit(projectDir)
-		console.log('\nInitialized a git repository')
-	} catch (err) {
-		if (err.exitCode == 127) return // no git available
-		throw err
+	if (!options.skipGit) {
+		// init git
+		try {
+			await initGit(projectDir)
+			console.log('\nInitialized a git repository')
+		} catch (err) {
+			if (err.exitCode == 127) return // no git available
+			throw err
+		}
 	}
 
 	const run = (command, options = {}) => {
@@ -311,4 +321,4 @@ async function create(appName, options) {
 	}
 }
 
-module.exports = {create}
+module.exports = { create }
